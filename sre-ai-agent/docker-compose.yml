@@ -1,0 +1,13 @@
+services:
+  sre-ai-agent:
+    build: .
+    container_name: sre-ai-agent
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    # volumes:
+    #   - ./src:/app/src  # 개발 시 코드 실시간 반영 (코드 수정 시 재빌드 필요)
+    restart: unless-stopped
