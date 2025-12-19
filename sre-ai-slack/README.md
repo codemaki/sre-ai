@@ -37,8 +37,68 @@ AI_AGENT_URL=http://localhost:8000
 
 ### 3. 앱 실행
 
+#### 로컬 실행
+
 ```bash
 uv run python app.py
+```
+
+#### Docker Compose로 실행 (AWS 배포용)
+
+**방법 1: 배포 스크립트 사용 (가장 간단 - macOS/Ubuntu 자동 감지)**
+
+```bash
+# 배포 (빌드 + 시작)
+./deploy.sh
+
+# 로그 확인
+./deploy.sh logs
+
+# 재시작
+./deploy.sh restart
+
+# 중지
+./deploy.sh down
+
+# 상태 확인
+./deploy.sh status
+```
+
+**방법 2: Makefile 사용 (권장 - macOS/Ubuntu 모두 호환)**
+
+```bash
+# 빌드 및 시작
+make up
+
+# 로그 확인
+make logs
+
+# 재시작
+make restart
+
+# 중지
+make down
+
+# 전체 배포 (빌드 + 시작)
+make deploy
+```
+
+**방법 3: Docker Compose 직접 사용**
+
+```bash
+# macOS (docker-compose)
+docker-compose up -d
+
+# Ubuntu/AWS (docker compose)
+docker compose up -d
+
+# 로그 확인
+docker-compose logs -f  # macOS
+docker compose logs -f  # Ubuntu
+
+# 중지
+docker-compose down  # macOS
+docker compose down  # Ubuntu
 ```
 
 ## Slack 앱 설정 가이드
@@ -148,6 +208,125 @@ curl -X POST http://localhost:8000/api/chat \
   "session_id": null
 }
 ```
+
+## AWS 서버 배포 가이드
+
+### 사전 요구사항
+
+- Docker 및 Docker Compose 설치된 AWS EC2 인스턴스
+- Git 설치
+
+### 배포 단계
+
+#### 1. 코드 클론
+
+```bash
+git clone <your-repository-url>
+cd sre-ai-slack
+```
+
+#### 2. 환경 변수 설정
+
+```bash
+# .env 파일 생성
+cp .env.example .env
+
+# .env 파일 편집 (vi, nano 등 사용)
+vi .env
+```
+
+`.env` 파일에 Slack 토큰 입력:
+```
+SLACK_BOT_TOKEN=xoxb-실제-토큰
+SLACK_APP_TOKEN=xapp-실제-토큰
+SLACK_SIGNING_SECRET=실제-시크릿
+AI_AGENT_URL=http://your-ai-agent:8000
+```
+
+**중요**: AI_AGENT_URL은 AI Agent 서버의 실제 주소로 변경하세요.
+- 같은 Docker 네트워크 내: `http://ai-agent-container:8000`
+- 다른 서버: `http://ai-agent-server-ip:8000`
+
+#### 3. Docker Compose로 실행
+
+```bash
+# 방법 1: 배포 스크립트 사용 (가장 간단 - 자동 감지)
+./deploy.sh
+
+# 방법 2: Makefile 사용
+make up
+
+# 방법 3: docker compose 직접 사용 (Ubuntu)
+docker compose up -d
+
+# 로그 확인 (앱이 정상 시작되었는지 확인)
+./deploy.sh logs
+# 또는
+make logs
+# 또는
+docker compose logs -f slack-bot
+```
+
+정상 실행 시 다음과 같은 로그가 보입니다:
+```
+⚡️ Slack AI Agent 앱이 시작되었습니다!
+```
+
+#### 4. 서버 재부팅 시 자동 실행 설정 (선택사항)
+
+```bash
+# systemd 서비스 파일 생성
+sudo vi /etc/systemd/system/sre-ai-slack.service
+```
+
+다음 내용 입력:
+```ini
+[Unit]
+Description=SRE AI Slack Bot
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/sre-ai-slack
+ExecStart=/usr/bin/docker-compose up -d
+ExecStop=/usr/bin/docker-compose down
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+```
+
+서비스 활성화:
+```bash
+sudo systemctl enable sre-ai-slack
+sudo systemctl start sre-ai-slack
+```
+
+#### 5. 업데이트 배포
+
+코드 업데이트 시:
+```bash
+git pull
+
+# 방법 1: 배포 스크립트 사용 (가장 간단)
+./deploy.sh
+
+# 방법 2: Makefile 사용
+make deploy
+
+# 방법 3: docker compose 직접 사용
+docker compose down
+docker compose build
+docker compose up -d
+```
+
+### AWS EC2 보안 그룹 설정
+
+Socket Mode를 사용하므로 **인바운드 규칙 추가 불필요**합니다.
+- 앱이 Slack으로 outbound 연결만 합니다
+- 기본 outbound 규칙(모두 허용)만 있으면 됩니다
 
 ## 트러블슈팅
 

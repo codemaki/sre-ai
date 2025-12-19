@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  slack-bot:
+    build: .
+    container_name: sre-ai-slack-bot
+    restart: unless-stopped
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+      - AI_AGENT_URL=${AI_AGENT_URL}
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
