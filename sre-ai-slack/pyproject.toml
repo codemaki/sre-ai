@@ -1,0 +1,14 @@
+[project]
+name = "sre-ai-slack"
+version = "0.1.0"
+description = "Slack app integrated with AI Agent"
+requires-python = ">=3.9"
+dependencies = [
+    "slack-bolt>=1.21.2",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
